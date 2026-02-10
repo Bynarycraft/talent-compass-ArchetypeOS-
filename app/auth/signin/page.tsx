@@ -1,30 +1,43 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SignInPage() {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
         try {
-            await signIn("credentials", {
+            const result = await signIn("credentials", {
                 email,
                 password,
-                callbackUrl: "/dashboard",
+                redirect: false,
             });
+
+            if (result?.ok) {
+                router.push("/dashboard");
+            } else {
+                setError(result?.error || "Sign in failed. Please check your credentials.");
+            }
         } catch (error) {
             console.error(error);
+            setError("An error occurred during sign in. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -39,6 +52,12 @@ export default function SignInPage() {
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
@@ -55,6 +74,7 @@ export default function SignInPage() {
                             <Input
                                 id="password"
                                 type="password"
+                                placeholder="Your password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
