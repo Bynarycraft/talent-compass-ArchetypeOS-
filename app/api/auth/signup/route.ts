@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,13 +26,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For MVP: Store password plainly (NOT FOR PRODUCTION)
-    // In production, use: const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         email,
         name,
-        password, // In production, use hashedPassword
+        password: hashedPassword,
         role,
       },
     });

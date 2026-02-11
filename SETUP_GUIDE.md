@@ -156,6 +156,35 @@ npm run dev -- -p 3001
 # Then visit http://localhost:3001
 ```
 
+## Deployment Checklist (Auth + Database)
+
+Before deploying, set these environment variables in your hosting provider:
+
+```env
+DATABASE_URL="postgresql://user:password@host:5432/dbname?schema=public"
+NEXTAUTH_URL="https://your-domain.com"
+NEXTAUTH_SECRET="your-long-random-secret"
+NEXT_PUBLIC_APP_NAME="ArchetypeOS"
+```
+
+Recommended deployment steps:
+
+```bash
+# Install dependencies
+npm install
+
+# Apply migrations to production database
+npx prisma migrate deploy
+
+# Generate Prisma client
+npx prisma generate
+
+# Build the app
+npm run build
+```
+
+If you use Vercel, add the same env vars in Project Settings and redeploy.
+
 ## Project Structure
 
 ```
@@ -279,10 +308,9 @@ vercel --prod
 
 ⚠️ **This is an MVP** - For production use:
 
-1. **Passwords**: Currently stored plainly for MVP. Enable bcryptjs in production:
-   - Install: `npm install bcryptjs`
-   - Update auth routes to hash passwords
-   - Update auth.ts to use bcrypt.compare()
+1. **Passwords**: Stored with bcrypt hashing on signup.
+   - Existing plaintext users must reset passwords after this change
+   - Use unique, strong passwords in production
 
 2. **NextAuth Secret**: Use strong, unique secret in production
    - Never commit to git

@@ -38,9 +38,10 @@ export async function GET(_req: Request) {
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
+    const role = session?.user?.role?.toLowerCase();
 
     // Only Admin/Supervisor can create courses
-    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPERVISOR")) {
+    if (!session || (role !== "admin" && role !== "supervisor")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

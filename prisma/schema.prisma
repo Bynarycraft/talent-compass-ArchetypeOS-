@@ -7,65 +7,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Model - Support for all roles: candidate, learner, supervisor, admin
 model User {
-  id                    String    @id @default(cuid())
+  id                    String             @id @default(cuid())
   name                  String?
-  email                 String?   @unique
+  email                 String?            @unique
   emailVerified         DateTime?
-  password              String?   // Hashed password for credentials auth
+  password              String?
   image                 String?
-  
-  // Role: candidate, learner, supervisor, admin
-  role                  String    @default("candidate")
-  
-  // Archetype: Maker, Catalyst, Architect, Refiner, etc
+  role                  String             @default("candidate")
   archetype             String?
-  
-  // Supervisor ID (if user is a learner/candidate)
   supervisorId          String?
-  supervisor            User?     @relation("SupervisorRelation", fields: [supervisorId], references: [id], onDelete: SetNull)
-  learners              User[]    @relation("SupervisorRelation")
-  
-  // Learning tracking
-  totalLearningHours    Int       @default(0)
+  totalLearningHours    Int                @default(0)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  accounts              Account[]          @relation("accounts")
+  auditLogs             AuditLog[]
+  courseEnrollments     CourseEnrollment[]
+  feedbackReceived      Feedback[]         @relation("FeedbackTo")
+  feedbackSent          Feedback[]         @relation("FeedbackFrom")
   dailyLearningSessions LearningSession[]
   reflections           Reflection[]
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  // Relations
-  accounts              Account[] @relation("accounts")
   sessions              Session[]
   skills                Skill[]
-  courseEnrollments     CourseEnrollment[]
   testResults           TestResult[]
-  feedbackSent          Feedback[] @relation("FeedbackFrom")
-  feedbackReceived      Feedback[] @relation("FeedbackTo")
-  auditLogs             AuditLog[]
+  supervisor            User?              @relation("SupervisorRelation", fields: [supervisorId], references: [id])
+  learners              User[]             @relation("SupervisorRelation")
 
   @@index([role])
   @@index([archetype])
   @@index([supervisorId])
 }
 
-// NextAuth Sessions & Accounts
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation("accounts", fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation("accounts", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -86,69 +72,65 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Archetype & Roadmap Management
 model Archetype {
-  id          String    @id @default(cuid())
-  name        String    @unique // Maker, Catalyst, Architect, Refiner
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
   roadmapId   String?
-  roadmap     Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roadmap     Roadmap? @relation(fields: [roadmapId], references: [id])
 
   @@index([name])
 }
 
 model Roadmap {
-  id          String    @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
-  archetype   String? // Reference to archetype name or ID
+  archetype   String?
   description String?
-  modules     Module[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   archetypes  Archetype[]
   courses     Course[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  modules     Module[]
 
   @@index([archetype])
 }
 
 model Module {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   roadmapId   String
   name        String
   description String?
-  order       Int // Sequence in roadmap
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   courses     Course[]
-  roadmap     Roadmap   @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
 
   @@index([roadmapId])
 }
 
-// Course Management
 model Course {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?  @db.Text
-  difficulty    String   @default("beginner") // beginner, intermediate, advanced
-  roadmapId     String?
-  moduleId      String?
-  contentType   String   // "video", "text", "pdf", "link"
-  contentUrl    String?  // URL to video, PDF, or external link
-  duration      Int?     // Duration in minutes
-  version       String   @default("1.0")
-  createdBy     String?  // Admin ID
-  thumbnail     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  roadmap       Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
-  module        Module?   @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  enrollments   CourseEnrollment[]
-  tests         Test[]
+  id          String             @id @default(cuid())
+  title       String
+  description String?
+  difficulty  String             @default("beginner")
+  roadmapId   String?
+  moduleId    String?
+  contentType String
+  contentUrl  String?
+  duration    Int?
+  version     String             @default("1.0")
+  createdBy   String?
+  thumbnail   String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  module      Module?            @relation(fields: [moduleId], references: [id])
+  roadmap     Roadmap?           @relation(fields: [roadmapId], references: [id])
+  enrollments CourseEnrollment[]
+  tests       Test[]
 
   @@index([roadmapId])
   @@index([moduleId])
@@ -156,16 +138,15 @@ model Course {
 }
 
 model CourseEnrollment {
-  id            String   @id @default(cuid())
-  userId        String
-  courseId      String
-  status        String   @default("in_progress") // in_progress, completed, failed
-  progress      Int      @default(0) // 0-100
-  enrolledAt    DateTime @default(now())
-  completedAt   DateTime?
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  status      String    @default("in_progress")
+  progress    Int       @default(0)
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@index([userId])
@@ -173,23 +154,21 @@ model CourseEnrollment {
   @@index([status])
 }
 
-// Testing & Assessments
 model Test {
-  id            String    @id @default(cuid())
-  courseId      String
-  title         String
-  description   String?
-  type          String    @default("mixed") // mcq, written, coding, mixed
-  timeLimit     Int?      // Time limit in minutes
-  attemptLimit  Int       @default(1)
-  passingScore  Int       @default(70) // Pass threshold %
-  questions     String    @db.Text // JSON stringified question array
-  gradingType   String    @default("auto") // auto, manual, hybrid
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  results       TestResult[]
+  id           String       @id @default(cuid())
+  courseId     String
+  title        String
+  description  String?
+  type         String       @default("mixed")
+  timeLimit    Int?
+  attemptLimit Int          @default(1)
+  passingScore Int          @default(70)
+  questions    String
+  gradingType  String       @default("auto")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  results      TestResult[]
 
   @@index([courseId])
 }
@@ -198,19 +177,18 @@ model TestResult {
   id            String    @id @default(cuid())
   userId        String
   testId        String
-  score         Int       // Score out of 100
-  status        String    @default("submitted") // not_started, in_progress, submitted, graded
-  answers       String    @db.Text // JSON stringified answers
-  feedback      String?   @db.Text // Grader feedback
-  gradedBy      String?   // Admin/Supervisor ID who graded
+  score         Int
+  status        String    @default("submitted")
+  answers       String
+  feedback      String?
+  gradedBy      String?
   gradedAt      DateTime?
   attemptNumber Int       @default(1)
   startedAt     DateTime  @default(now())
   submittedAt   DateTime?
   createdAt     DateTime  @default(now())
-
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   test          Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, testId, attemptNumber])
   @@index([userId])
@@ -218,79 +196,71 @@ model TestResult {
   @@index([status])
 }
 
-// Learning Session Tracking
 model LearningSession {
-  id                String    @id @default(cuid())
-  userId            String
-  status            String    @default("active") // active, completed, paused
-  startTime         DateTime  @default(now())
-  endTime           DateTime?
-  durationMinutes   Int?      // Calculated: (endTime - startTime) / 60
-  notes             String?   @db.Text
-  reflectionId      String?
-  reflection        Reflection?
-  createdAt         DateTime  @default(now())
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String      @id @default(cuid())
+  userId          String
+  status          String      @default("active")
+  startTime       DateTime    @default(now())
+  endTime         DateTime?
+  durationMinutes Int?
+  notes           String?
+  reflectionId    String?
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reflection      Reflection?
 
   @@index([userId])
   @@index([status])
 }
 
-// Daily Reflections
 model Reflection {
-  id                String    @id @default(cuid())
+  id                String          @id @default(cuid())
   userId            String
-  learningSessionId String    @unique
+  learningSessionId String          @unique
   courseId          String?
-  text              String    @db.Text
-  mood              String?   // optional mood tracking: excited, neutral, frustrated
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text              String
+  mood              String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   learningSession   LearningSession @relation(fields: [learningSessionId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([courseId])
 }
 
-// Skills Tracking
 model Skill {
-  id                String    @id @default(cuid())
-  userId            String
-  name              String
-  description       String?
-  level             Int       @default(0) // 0-5 scale
-  proficiency       Int       @default(0) // 0-100 %
-  evidenceCourses   String?   @db.Text // JSON array of course IDs
-  evidence          String?   @db.Text // Evidence/proof of skill
-  lastUpdated       DateTime  @default(now())
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  level           Int      @default(0)
+  proficiency     Int      @default(0)
+  evidenceCourses String?
+  evidence        String?
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, name])
   @@index([userId])
 }
 
-// Feedback & Mentorship
 model Feedback {
-  id                String    @id @default(cuid())
-  senderId          String
-  receiverId        String
-  courseId          String?
-  type              String    @default("comment") // comment, growth_note, kudos
-  text              String    @db.Text
-  rating            Int?      // 1-5 for kudos
-  isPrivate         Boolean   @default(false)
-  threadId          String?   // For threaded comments
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  sender            User      @relation("FeedbackFrom", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver          User      @relation("FeedbackTo", fields: [receiverId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  courseId   String?
+  type       String   @default("comment")
+  text       String
+  rating     Int?
+  isPrivate  Boolean  @default(false)
+  threadId   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  receiver   User     @relation("FeedbackTo", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("FeedbackFrom", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
@@ -298,17 +268,15 @@ model Feedback {
   @@index([threadId])
 }
 
-// Audit Log
 model AuditLog {
-  id                String    @id @default(cuid())
-  userId            String
-  action            String    // e.g., "course_enrolled", "test_submitted", "session_completed"
-  targetType        String?   // e.g., "Course", "Test", "User"
-  targetId          String?
-  details           String?   @db.Text // JSON details
-  timestamp         DateTime  @default(now())
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?
+  timestamp  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([action])

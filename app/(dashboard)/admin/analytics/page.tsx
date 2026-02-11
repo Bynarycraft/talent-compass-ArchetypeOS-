@@ -7,8 +7,9 @@ import { BarChart3, Users, Clock, Award } from "lucide-react";
 
 export default async function AdminAnalyticsPage() {
     const session = await getServerSession(authOptions);
+    const role = session?.user?.role?.toLowerCase();
 
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session || role !== "admin") {
         redirect("/dashboard");
     }
 
