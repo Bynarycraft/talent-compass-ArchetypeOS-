@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "vercel-build": "prisma migrate deploy && prisma generate && next build",
+    "vercel-seed": "prisma db seed",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
