@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -14,35 +14,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function NewCoursePage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [authReady, setAuthReady] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         difficulty: "beginner",
-        contentType: "video",
         contentUrl: "",
         duration: "",
     });
 
-    if (status === "unauthenticated") {
-        router.push("/auth/signin");
-    }
+    useEffect(() => {
+        if (status === "loading") {
+            return;
+        }
 
-    if (session?.user?.role !== "admin") {
-        router.push("/dashboard");
-    }
+        if (status === "unauthenticated") {
+            router.push("/auth/signin");
+            return;
+        }
+
+        if (session?.user?.role !== "admin") {
+            router.push("/dashboard");
+            return;
+        }
+
+        setAuthReady(true);
+    }, [status, session, router]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -65,12 +69,13 @@ export default function NewCoursePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
+                    contentType: "video",
                     duration: formData.duration ? parseInt(formData.duration) : null,
                 }),
             });
 
             if (res.ok) {
-                const course = await res.json();
+                await res.json();
                 router.push("/admin/courses");
             } else {
                 alert("Failed to create course");
@@ -85,6 +90,14 @@ export default function NewCoursePage() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            {!authReady && (
+                <div className="flex min-h-[40vh] items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+            )}
+
+            {authReady && (
+                <>
             {/* Navigation */}
             <Link
                 href="/admin/courses"
@@ -173,38 +186,24 @@ export default function NewCoursePage() {
 
                         {/* Content Type */}
                         <div className="space-y-2">
-                            <Label htmlFor="contentType" className="text-sm font-bold">
-                                Content Type *
-                            </Label>
-                            <Select
-                                value={formData.contentType}
-                                onValueChange={(value) =>
-                                    handleSelectChange("contentType", value)
-                                }
-                            >
-                                <SelectTrigger className="rounded-xl h-10 border-border/40 focus:border-primary">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="video">Video</SelectItem>
-                                    <SelectItem value="text">Text</SelectItem>
-                                    <SelectItem value="pdf">PDF Document</SelectItem>
-                                    <SelectItem value="link">External Link</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label className="text-sm font-bold">Content Type *</Label>
+                            <div className="rounded-xl border border-border/40 bg-secondary/30 px-4 py-2 text-sm font-bold">
+                                Video (YouTube)
+                            </div>
                         </div>
 
                         {/* Content URL */}
                         <div className="space-y-2">
                             <Label htmlFor="contentUrl" className="text-sm font-bold">
-                                Content URL
+                                YouTube URL *
                             </Label>
                             <Input
                                 id="contentUrl"
                                 name="contentUrl"
-                                placeholder="https://example.com/video or path to resource..."
+                                placeholder="https://www.youtube.com/watch?v=..."
                                 value={formData.contentUrl}
                                 onChange={handleChange}
+                                required
                                 className="rounded-xl h-10 border-border/40 focus:border-primary"
                             />
                         </div>
@@ -254,6 +253,8 @@ export default function NewCoursePage() {
                     </form>
                 </CardContent>
             </Card>
+                </>
+            )}
         </div>
     );
 }

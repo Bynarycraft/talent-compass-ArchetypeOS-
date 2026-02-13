@@ -56,7 +56,7 @@ export default function SignUpPage() {
       }
 
       router.push("/auth/signin?message=Signup successful! Please sign in.");
-    } catch (err) {
+    } catch (_err) {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

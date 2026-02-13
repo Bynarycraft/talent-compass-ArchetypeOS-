@@ -4,13 +4,10 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -18,16 +15,34 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { Loader2 } from "lucide-react";
 
+type AnalyticsSummary = {
+  totalLearningMinutes?: number;
+  averageTestScore?: number;
+};
+
+type AdminUser = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role?: string | null;
+  archetype?: string | null;
+  createdAt: string | Date;
+};
+
+type RoleDistributionItem = {
+  name: string;
+  value: number;
+};
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [users, setUsers] = useState([]);
+  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,10 +63,12 @@ export default function AdminDashboard() {
         ]);
 
         if (analyticsRes.ok) {
-          setAnalytics(await analyticsRes.json());
+          const analyticsData = (await analyticsRes.json()) as AnalyticsSummary;
+          setAnalytics(analyticsData);
         }
         if (usersRes.ok) {
-          setUsers(await usersRes.json());
+          const usersData = (await usersRes.json()) as AdminUser[];
+          setUsers(usersData);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -81,9 +98,9 @@ export default function AdminDashboard() {
     { name: "May", hours: 180 },
   ];
 
-  const roleDistribution = users?.reduce((acc: any, user: any) => {
-    const role = user.role || "unknown";
-    const existing = acc.find((r: any) => r.name === role);
+  const roleDistribution = users.reduce<RoleDistributionItem[]>((acc, user) => {
+    const role = user.role ?? "unknown";
+    const existing = acc.find((item) => item.name === role);
     if (existing) {
       existing.value += 1;
     } else {
@@ -174,12 +191,12 @@ export default function AdminDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, value }) => `${name} (${value})`}
+                      label={({ name, value }: { name?: string; value?: number }) => `${name ?? ""} (${value ?? 0})`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {roleDistribution?.map((entry: any, index: number) => (
+                      {roleDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -210,7 +227,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users?.map((user: any) => (
+                    {users.map((user) => (
                       <tr key={user.id} className="border-b hover:bg-muted/50">
                         <td className="py-2 px-4">{user.name}</td>
                         <td className="py-2 px-4">{user.email}</td>

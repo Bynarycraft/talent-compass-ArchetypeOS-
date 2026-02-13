@@ -6,6 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { User, Mail, Shield, UserCircle, Calendar, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { Prisma } from "@prisma/client";
+
+type ProfileUser = Prisma.UserGetPayload<{
+    include: {
+        courseEnrollments: { include: { course: true } };
+        dailyLearningSessions: true;
+        testResults: true;
+    };
+}>;
 
 export default async function ProfilePage() {
     const session = await getServerSession(authOptions);
@@ -14,7 +23,7 @@ export default async function ProfilePage() {
         redirect("/auth/signin");
     }
 
-    let user: any = null;
+    let user: ProfileUser | null = null;
     try {
         user = await prisma.user.findUnique({
             where: { id: session.user.id },
@@ -23,14 +32,13 @@ export default async function ProfilePage() {
                 dailyLearningSessions: true,
                 testResults: true,
             }
-        });
+        }) as ProfileUser | null;
     } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('[profile] prisma error:', err);
         return (
             <div className="p-12 text-center">
                 <h2 className="text-2xl font-bold">Data currently unavailable</h2>
-                <p className="mt-4 text-muted-foreground">We couldn't load your profile data right now — please try again later.</p>
+                <p className="mt-4 text-muted-foreground">We could not load your profile data right now — please try again later.</p>
             </div>
         );
     }

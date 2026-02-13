@@ -2,10 +2,6 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 const publicRoutes = ["/auth/signin", "/auth/signup", "/"];
-const candidateRoutes = ["/candidate"];
-const learnerRoutes = ["/dashboard", "/courses", "/tracker", "/profile"];
-const supervisorRoutes = ["/dashboard", "/supervisor"];
-const adminRoutes = ["/admin"];
 
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });

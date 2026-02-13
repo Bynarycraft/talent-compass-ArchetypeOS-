@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET roadmaps
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const roadmaps = await prisma.roadmap.findMany({
       include: {

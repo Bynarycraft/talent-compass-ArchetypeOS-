@@ -96,7 +96,7 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account: _account }) {
             console.log("[jwt] Called with user:", user ? { id: user.id, email: user.email } : "none");
             if (user) {
                 token.id = user.id as string;

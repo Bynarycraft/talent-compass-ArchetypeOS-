@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { PlayCircle, CheckCircle2, Clock, FileText, Video, BookOpen, ExternalLink, Award, Users, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Video, Users, AlertCircle, ExternalLink } from 'lucide-react'
 
 interface Course {
   id: string
@@ -101,6 +101,12 @@ export default function CoursePage() {
 
   const difficultyColor = getDifficultyColor(difficulty)
 
+  const contentUrl = course.contentUrl || ''
+  const isYouTube = contentUrl.includes('youtube') || contentUrl.includes('youtu.be')
+  const embedUrl = contentUrl
+    .replace('watch?v=', 'embed/')
+    .replace('youtu.be/', 'youtube.com/embed/')
+
   return (
     <div className="max-w-6xl mx-auto space-y-12">
       {/* Back Link */}
@@ -135,8 +141,8 @@ export default function CoursePage() {
             <div className="p-4 rounded-2xl bg-secondary/30 border border-white/5">
               <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Type</div>
               <div className="flex items-center gap-2">
-                {course.contentType === 'video' ? <Video className="h-4 w-4 text-blue-500" /> : course.contentType === 'pdf' ? <FileText className="h-4 w-4 text-red-500" /> : <BookOpen className="h-4 w-4 text-amber-500" />}
-                <span className="text-lg font-bold capitalize">{course.contentType || 'Resource'}</span>
+                <Video className="h-4 w-4 text-blue-500" />
+                <span className="text-lg font-bold">Video</span>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-secondary/30 border border-white/5">
@@ -184,11 +190,11 @@ export default function CoursePage() {
           <CardContent className="p-8">
             {course.contentUrl ? (
               <div className="space-y-4">
-                {course.contentType === 'video' && course.contentUrl.includes('youtube') ? (
+                {isYouTube ? (
                   <div className="relative w-full pb-[56.25%] rounded-2xl overflow-hidden bg-black/10">
                     <iframe
                       className="absolute inset-0 w-full h-full"
-                      src={course.contentUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      src={embedUrl}
                       title={course.title}
                       allowFullScreen
                     />
@@ -196,16 +202,19 @@ export default function CoursePage() {
                 ) : (
                   <div className="p-8 rounded-2xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-center">
                     <div className="mb-4 p-4 rounded-full bg-primary/10">
-                      {course.contentType === 'pdf' ? <FileText className="h-8 w-8 text-red-500" /> : course.contentType === 'video' ? <Video className="h-8 w-8 text-blue-500" /> : <BookOpen className="h-8 w-8 text-amber-500" />}
+                      <Video className="h-8 w-8 text-blue-500" />
                     </div>
-                    <h4 className="font-bold mb-2">{course.contentType === 'pdf' ? 'PDF Document Available' : course.contentType === 'video' ? 'Video Content' : 'External Resource'}</h4>
-                    {course.contentUrl && (
-                      <Button onClick={() => window.open(course.contentUrl || '#', '_blank')} className="rounded-2xl font-bold">
-                        Open Content
-                      </Button>
-                    )}
+                    <h4 className="font-bold mb-2">Video Content</h4>
+                    <p className="text-sm text-muted-foreground">This course expects a YouTube link.</p>
                   </div>
                 )}
+                <Button
+                  onClick={() => window.open(contentUrl, '_blank', 'noopener,noreferrer')}
+                  className="rounded-2xl font-bold"
+                  disabled={!contentUrl}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" /> Open on YouTube
+                </Button>
               </div>
             ) : (
               <div className="p-8 rounded-2xl border-2 border-dashed border-border/40 text-center">

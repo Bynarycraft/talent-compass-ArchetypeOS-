@@ -48,14 +48,20 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         // const archetype = session.user.archetype;
-        const { title, description, difficulty, contentType } = body;
+        const { title, description, difficulty, contentUrl, duration } = body;
+
+        if (!title || !contentUrl) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
 
         const course = await prisma.course.create({
             data: {
                 title,
                 description,
                 difficulty,
-                contentType,
+                contentType: "video",
+                contentUrl,
+                duration,
                 // Ideally link to a roadmap here via roadmapId if provided
             }
         });

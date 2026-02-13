@@ -16,6 +16,15 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+
+type DashboardUser = Prisma.UserGetPayload<{
+    include: {
+        courseEnrollments: { include: { course: true } };
+        dailyLearningSessions: true;
+        testResults: { include: { test: { include: { course: true } } } };
+    };
+}>;
 
 export default async function DashboardPage() {
     const session = await getServerSession(authOptions);
@@ -24,7 +33,7 @@ export default async function DashboardPage() {
         redirect("/auth/signin");
     }
 
-    let user: any = null;
+    let user: DashboardUser | null = null;
     try {
         user = await prisma.user.findUnique({
             where: { id: session.user.id },
@@ -50,15 +59,14 @@ export default async function DashboardPage() {
                     take: 5
                 }
             }
-        });
+        }) as DashboardUser | null;
     } catch (err) {
         // If DB errors occur, show a graceful fallback UI instead of crashing
-        // eslint-disable-next-line no-console
         console.error('[dashboard] prisma error:', err);
         return (
             <div className="p-12 text-center">
                 <h2 className="text-2xl font-bold">Data currently unavailable</h2>
-                <p className="mt-4 text-muted-foreground">We couldn't load your dashboard data right now — please try again later.</p>
+                <p className="mt-4 text-muted-foreground">We could not load your dashboard data right now — please try again later.</p>
             </div>
         );
     }

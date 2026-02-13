@@ -4,16 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock } from "lucide-react";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+
+type CourseWithRoadmap = Prisma.CourseGetPayload<{ include: { roadmap: true } }>;
 
 export default async function CoursesPage() {
-    let courses = [] as any[];
+    let courses: CourseWithRoadmap[] = [];
     try {
         courses = await prisma.course.findMany({
             include: { roadmap: true }
         });
     } catch (err) {
         // DB unavailable — render fallback empty list and log the error
-        // eslint-disable-next-line no-console
         console.error('[courses] prisma error:', err);
     }
 

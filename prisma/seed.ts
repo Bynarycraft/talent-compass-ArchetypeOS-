@@ -84,7 +84,7 @@ async function main() {
   console.log('✓ Created candidate user:', candidate1.email)
 
   // Create Archetypes
-  const architectureArchetype = await prisma.archetype.upsert({
+  const _architectureArchetype = await prisma.archetype.upsert({
     where: { name: 'Architect' },
     update: {},
     create: {
@@ -93,7 +93,7 @@ async function main() {
     }
   })
 
-  const makerArchetype = await prisma.archetype.upsert({
+  const _makerArchetype = await prisma.archetype.upsert({
     where: { name: 'Maker' },
     update: {},
     create: {
@@ -102,7 +102,7 @@ async function main() {
     }
   })
 
-  const catalystArchetype = await prisma.archetype.upsert({
+  const _catalystArchetype = await prisma.archetype.upsert({
     where: { name: 'Catalyst' },
     update: {},
     create: {
@@ -150,7 +150,10 @@ async function main() {
   // Create Courses
   const course1 = await prisma.course.upsert({
     where: { id: 'course-1' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/w7ejDZ8SWv8'
+    },
     create: {
       id: 'course-1',
       title: 'React Fundamentals',
@@ -167,7 +170,10 @@ async function main() {
 
   const course2 = await prisma.course.upsert({
     where: { id: 'course-2' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/0aJ8j1HqDJE'
+    },
     create: {
       id: 'course-2',
       title: 'Advanced React Patterns',
@@ -184,7 +190,10 @@ async function main() {
 
   const course3 = await prisma.course.upsert({
     where: { id: 'course-3' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/ENrzD6iR81g'
+    },
     create: {
       id: 'course-3',
       title: 'Node.js & Express Fundamentals',
@@ -201,7 +210,10 @@ async function main() {
 
   const course4 = await prisma.course.upsert({
     where: { id: 'course-4' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/gieEQFIfgYc'
+    },
     create: {
       id: 'course-4',
       title: 'TypeScript for JavaScript Developers',
@@ -216,9 +228,12 @@ async function main() {
     }
   })
 
-  const course5 = await prisma.course.upsert({
+  const _course5 = await prisma.course.upsert({
     where: { id: 'course-5' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/9Pzj7Aj25lw'
+    },
     create: {
       id: 'course-5',
       title: 'Database Design with PostgreSQL',
@@ -226,16 +241,19 @@ async function main() {
       difficulty: 'intermediate',
       roadmapId: roadmap.id,
       moduleId: module2.id,
-      contentType: 'pdf',
-      contentUrl: '/guides/postgresql-guide.pdf',
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/9Pzj7Aj25lw',
       duration: 160,
       version: '1.0'
     }
   })
 
-  const course6 = await prisma.course.upsert({
+  const _course6 = await prisma.course.upsert({
     where: { id: 'course-6' },
-    update: {},
+    update: {
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/lXv5mM2F81o'
+    },
     create: {
       id: 'course-6',
       title: 'System Design Interview Prep',
@@ -243,8 +261,8 @@ async function main() {
       difficulty: 'advanced',
       roadmapId: roadmap.id,
       moduleId: module2.id,
-      contentType: 'text',
-      contentUrl: '/guides/system-design.md',
+      contentType: 'video',
+      contentUrl: 'https://youtube.com/embed/lXv5mM2F81o',
       duration: 240,
       version: '1.0'
     }
