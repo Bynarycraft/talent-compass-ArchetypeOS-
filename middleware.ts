@@ -32,6 +32,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  if (
+    userRole === "candidate" &&
+    (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/roadmap") ||
+      pathname.startsWith("/tracker") ||
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/supervisor"))
+  ) {
+    return NextResponse.redirect(new URL("/candidate", request.url));
+  }
+
   return NextResponse.next();
 }
 

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -48,8 +49,8 @@ export default function SignInPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-muted/50">
-            <Card className="w-[350px]">
+        <div className="flex items-center justify-center min-h-screen bg-muted/50 px-4">
+            <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>ArchetypeOS Login</CardTitle>
                     <CardDescription>Enter your credentials to access the system.</CardDescription>
@@ -86,10 +87,17 @@ export default function SignInPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In
-                        </Button>
+                        <div className="w-full space-y-3">
+                            <Button className="w-full" type="submit" disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Sign In
+                            </Button>
+                            <Link href="/auth/signup" className="block">
+                                <Button variant="outline" className="w-full">
+                                    Create Account
+                                </Button>
+                            </Link>
+                        </div>
                     </CardFooter>
                 </form>
             </Card>

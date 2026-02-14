@@ -9,7 +9,29 @@ export async function GET(
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    const role = session?.user?.role?.toLowerCase();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { courseId } = await params;
+
+    if (role === "candidate") {
+      const enrollment = await prisma.courseEnrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: session.user.id,
+            courseId,
+          },
+        },
+      });
+
+      if (!enrollment) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    }
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },

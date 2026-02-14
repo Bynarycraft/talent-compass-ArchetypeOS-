@@ -64,8 +64,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted/50">
-      <Card className="w-[400px]">
+    <div className="flex items-center justify-center min-h-screen bg-muted/50 px-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create Account</CardTitle>
           <CardDescription>Join ArchetypeOS as a Candidate</CardDescription>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle2, Clock, Video, Users, AlertCircle, ExternalLink } from 'lucide-react'
@@ -18,7 +18,7 @@ interface Course {
   contentType: string | null
   duration: number | null
   roadmap?: { archetype: string }
-  tests?: { id: string; title: string }[]
+  tests?: { id: string; title: string; type: string }[]
   _count?: { enrollments: number }
 }
 
@@ -28,6 +28,19 @@ interface Enrollment {
   progress: number
 }
 
+interface TestResult {
+  id: string
+  score: number
+  status: string
+  submittedAt: string | null
+  attemptNumber: number
+  test: {
+    id: string
+    title: string
+    passingScore: number
+  }
+}
+
 export default function CoursePage() {
   const params = useParams()
   const router = useRouter()
@@ -35,6 +48,7 @@ export default function CoursePage() {
 
   const [course, setCourse] = useState<Course | null>(null)
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null)
+  const [testResults, setTestResults] = useState<TestResult[]>([])
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
 
@@ -53,6 +67,12 @@ export default function CoursePage() {
         if (enrollRes.ok) {
           const enrollData = await enrollRes.json()
           setEnrollment(enrollData)
+        }
+
+        const resultsRes = await fetch(`/api/courses/${courseId}/test-results`)
+        if (resultsRes.ok) {
+          const resultsData = await resultsRes.json()
+          setTestResults(resultsData)
         }
       } catch (err) {
         console.error('Error fetching course:', err)
@@ -75,6 +95,23 @@ export default function CoursePage() {
       console.error('Failed to enroll:', err)
     } finally {
       setEnrolling(false)
+    }
+  }
+
+  const handleMarkComplete = async () => {
+    if (!courseId) return
+    try {
+      const res = await fetch(`/api/courses/${courseId}/progress`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progress: 100 })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setEnrollment(data)
+      }
+    } catch (err) {
+      console.error('Failed to update progress:', err)
     }
   }
 
@@ -175,6 +212,11 @@ export default function CoursePage() {
                   <Progress value={enrollment.progress} className="h-3 rounded-full" />
                 </div>
                 <Badge className="bg-primary/20 text-primary border-none font-bold capitalize">{enrollment.status}</Badge>
+                {enrollment.progress < 100 && (
+                  <Button onClick={handleMarkComplete} variant="outline" className="w-full rounded-2xl font-bold">
+                    Mark Content Complete
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
@@ -220,6 +262,85 @@ export default function CoursePage() {
               <div className="p-8 rounded-2xl border-2 border-dashed border-border/40 text-center">
                 <AlertCircle className="h-8 w-8 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <p className="text-muted-foreground">Content not yet available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none glass rounded-3xl overflow-hidden">
+          <CardHeader className="bg-muted/20 border-b border-border/10 p-8 pb-4">
+            <CardTitle className="text-2xl font-black">Assessments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-6">
+            {course.tests && course.tests.length > 0 ? (
+              <div className="space-y-4">
+                {course.tests.map((test) => {
+                  const result = testResults.find((r) => r.test.id === test.id)
+                  const passingScore = result?.test.passingScore ?? 70
+                  const statusLabel = result
+                    ? result.score >= passingScore
+                      ? 'Passed'
+                      : 'Needs Review'
+                    : 'Not Started'
+
+                  return (
+                    <div key={test.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl border border-border/30 p-5">
+                      <div>
+                        <h3 className="text-lg font-bold">{test.title}</h3>
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground">{test.type}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-secondary/60 text-foreground border-none">{statusLabel}</Badge>
+                        {result && (
+                          <Badge className="bg-primary/10 text-primary border-none">{result.score}%</Badge>
+                        )}
+                        <Link href={`/courses/${course.id}/test/${test.id}`}>
+                          <Button className="rounded-2xl font-bold" variant="outline">
+                            {result ? 'Retake' : 'Start'}
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl border-2 border-dashed border-border/40 text-center">
+                <AlertCircle className="h-8 w-8 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">No assessments available for this course.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none glass rounded-3xl overflow-hidden">
+          <CardHeader className="bg-muted/20 border-b border-border/10 p-8 pb-4">
+            <CardTitle className="text-2xl font-black">Assessment History</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            {testResults.length === 0 ? (
+              <div className="p-8 rounded-2xl border-2 border-dashed border-border/40 text-center">
+                <AlertCircle className="h-8 w-8 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">No assessment attempts yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {testResults.map((result) => (
+                  <div key={result.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl border border-border/30 p-4">
+                    <div>
+                      <p className="font-bold text-sm">{result.test.title}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Attempt {result.attemptNumber} · {result.status}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge className="bg-secondary/60 text-foreground border-none">{result.score}%</Badge>
+                      <Badge variant="outline">
+                        {result.submittedAt ? new Date(result.submittedAt).toLocaleDateString() : "Pending"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

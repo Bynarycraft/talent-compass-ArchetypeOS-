@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Square, Timer, Target, CheckCircle2 } from "lucide-react";
+import { Play, Square, Timer, Target, CheckCircle2, TrendingUp, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TrackerPage() {
@@ -12,6 +12,9 @@ export default function TrackerPage() {
     const [reflection, setReflection] = useState("");
     const [sessionsToday, setSessionsToday] = useState(0);
     const [totalMinutesToday, setTotalMinutesToday] = useState(0);
+    const [weeklyDays, setWeeklyDays] = useState<{ day: string; minutes: number }[]>([]);
+    const [weeklyTotal, setWeeklyTotal] = useState(0);
+    const [weeklyGoal, setWeeklyGoal] = useState(0);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -30,6 +33,13 @@ export default function TrackerPage() {
                 const data = await res.json();
                 setSessionsToday(data.sessionsCount);
                 setTotalMinutesToday(data.todayMinutes);
+            }
+            const weeklyRes = await fetch("/api/sessions/weekly");
+            if (weeklyRes.ok) {
+                const weeklyData = await weeklyRes.json();
+                setWeeklyDays(weeklyData.days);
+                setWeeklyTotal(weeklyData.totalMinutes);
+                setWeeklyGoal(weeklyData.goalMinutes);
             }
         } catch (_error) {
             console.error("Failed to fetch distance stats");
@@ -92,6 +102,44 @@ export default function TrackerPage() {
                     <Target className="h-4 w-4 text-primary animate-pulse" />
                     Deep work synchronization and performance tracking.
                 </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+                <Card className="border-none glass-card rounded-3xl overflow-hidden p-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                            <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black">{Math.round((weeklyTotal / 60) * 10) / 10}h</div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Learning</p>
+                        </div>
+                    </div>
+                </Card>
+                <Card className="border-none glass-card rounded-3xl overflow-hidden p-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-xl bg-accent/10 text-accent">
+                            <Briefcase className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black">{Math.max(0, 42 - Math.round((weeklyTotal / 60) * 10) / 10)}h</div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Work</p>
+                        </div>
+                    </div>
+                </Card>
+                <Card className="border-none glass-card rounded-3xl overflow-hidden p-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-xl bg-secondary/20 text-foreground">
+                            <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black">
+                                {weeklyGoal ? Math.round((weeklyTotal / weeklyGoal) * 100) : 0}%
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Learning Goal</p>
+                        </div>
+                    </div>
+                </Card>
             </div>
 
             <div className="grid gap-10 md:grid-cols-12">
@@ -160,6 +208,24 @@ export default function TrackerPage() {
                                 </div>
                             </div>
                         </div>
+                    </Card>
+
+                    <Card className="border-none glass-card rounded-3xl overflow-hidden p-8">
+                        <CardHeader className="p-0 pb-4">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Weekly Breakdown</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0 space-y-3">
+                            {weeklyDays.length === 0 ? (
+                                <div className="text-sm text-muted-foreground">No sessions logged this week.</div>
+                            ) : (
+                                weeklyDays.map((day) => (
+                                    <div key={day.day} className="flex items-center justify-between text-xs font-bold">
+                                        <span>{day.day}</span>
+                                        <span>{Math.round((day.minutes / 60) * 10) / 10}h</span>
+                                    </div>
+                                ))
+                            )}
+                        </CardContent>
                     </Card>
 
                     <Card className="border-none bg-gradient-to-br from-primary/10 to-accent/10 p-8 rounded-3xl">

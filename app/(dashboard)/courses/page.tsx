@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +12,20 @@ type CourseWithRoadmap = Prisma.CourseGetPayload<{ include: { roadmap: true } }>
 
 export default async function CoursesPage() {
     let courses: CourseWithRoadmap[] = [];
+    const session = await getServerSession(authOptions);
+    const role = session?.user?.role?.toLowerCase();
     try {
-        courses = await prisma.course.findMany({
-            include: { roadmap: true }
-        });
+        if (role === "candidate" && session?.user?.id) {
+            const enrollments = await prisma.courseEnrollment.findMany({
+                where: { userId: session.user.id },
+                include: { course: { include: { roadmap: true } } }
+            });
+            courses = enrollments.map((enrollment) => enrollment.course);
+        } else {
+            courses = await prisma.course.findMany({
+                include: { roadmap: true }
+            });
+        }
     } catch (err) {
         // DB unavailable — render fallback empty list and log the error
         console.error('[courses] prisma error:', err);

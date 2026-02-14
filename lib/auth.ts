@@ -100,7 +100,7 @@ export const authOptions: NextAuthOptions = {
             console.log("[jwt] Called with user:", user ? { id: user.id, email: user.email } : "none");
             if (user) {
                 token.id = user.id as string;
-                token.role = user.role as string;
+                token.role = user.role ? user.role.toLowerCase() : undefined;
                 token.archetype = user.archetype as string;
             }
             console.log("[jwt] Returning token:", { id: token.id });
@@ -110,7 +110,7 @@ export const authOptions: NextAuthOptions = {
             console.log("[session] Called with token:", { id: token.id });
             if (session && session.user) {
                 session.user.id = token.id as string;
-                session.user.role = token.role as string;
+                session.user.role = token.role ? token.role.toLowerCase() : undefined;
                 session.user.archetype = token.archetype as string;
             }
             console.log("[session] Returning session:", { user: session?.user });

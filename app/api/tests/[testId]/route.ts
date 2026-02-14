@@ -24,8 +24,34 @@ export async function GET(
             return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
         }
 
-        // Transform JSON questions to proper type if needed or return as is
-        return NextResponse.json(test);
+        const role = session.user.role?.toLowerCase();
+        if (role !== "admin" && role !== "supervisor") {
+            const enrollment = await prisma.courseEnrollment.findUnique({
+                where: {
+                    userId_courseId: {
+                        userId: session.user.id,
+                        courseId: test.courseId,
+                    },
+                },
+            });
+
+            if (!enrollment) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+            }
+        }
+
+        let parsedQuestions: unknown = [];
+        try {
+            parsedQuestions = JSON.parse(test.questions || "[]");
+        } catch (_error) {
+            parsedQuestions = [];
+        }
+
+        return NextResponse.json({
+            ...test,
+            questions: parsedQuestions,
+            timeLimitMinutes: test.timeLimit,
+        });
     } catch (error) {
         console.error("Test fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch assessment" }, { status: 500 });

@@ -41,10 +41,24 @@ export default function TestPage({ params }: { params: Promise<{ courseId: strin
     const [answers, setAnswers] = useState<Record<number, number>>({});
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [startedAt, setStartedAt] = useState<string | null>(null);
+    const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+    const [attemptLimit, setAttemptLimit] = useState<number | null>(null);
 
     useEffect(() => {
         async function fetchTest() {
             try {
+                const enrollRes = await fetch(`/api/courses/${courseId}/enroll-status`);
+                if (!enrollRes.ok) {
+                    router.push(`/courses/${courseId}`);
+                    return;
+                }
+                const enrollment = await enrollRes.json();
+                if (!enrollment) {
+                    router.push(`/courses/${courseId}`);
+                    return;
+                }
+
                 const res = await fetch(`/api/tests/${testId}`);
                 if (!res.ok) {
                     router.push(`/courses/${courseId}`);
@@ -54,6 +68,27 @@ export default function TestPage({ params }: { params: Promise<{ courseId: strin
                 setTest(data);
                 if (data.timeLimitMinutes) {
                     setTimeLeft(data.timeLimitMinutes * 60);
+                }
+
+                const attemptsRes = await fetch(`/api/tests/${testId}/attempts`);
+                if (attemptsRes.ok) {
+                    const attemptsData = await attemptsRes.json();
+                    setAttemptLimit(attemptsData.attemptLimit);
+                    setAttemptsRemaining(attemptsData.attemptsRemaining);
+                    if (attemptsData.attemptsRemaining <= 0) {
+                        toast.error("No attempts remaining for this assessment.");
+                    }
+                }
+                const startRes = await fetch(`/api/tests/${testId}/start`, { method: "POST" });
+                if (startRes.ok) {
+                    const startData = await startRes.json();
+                    if (startData?.startedAt) {
+                        setStartedAt(new Date(startData.startedAt).toISOString());
+                    } else {
+                        setStartedAt(new Date().toISOString());
+                    }
+                } else {
+                    setStartedAt(new Date().toISOString());
                 }
             } catch (error) {
                 console.error("Failed to fetch test:", error);
@@ -88,7 +123,7 @@ export default function TestPage({ params }: { params: Promise<{ courseId: strin
             const res = await fetch(`/api/tests/${testId}/submit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ answers })
+                body: JSON.stringify({ answers, startedAt })
             });
 
             if (res.ok) {
@@ -107,6 +142,21 @@ export default function TestPage({ params }: { params: Promise<{ courseId: strin
 
     if (loading) return <div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>;
     if (!test) return null;
+    if (attemptsRemaining === 0) {
+        return (
+            <div className="max-w-3xl mx-auto space-y-6 py-10">
+                <div className="p-8 rounded-3xl bg-amber-500/5 border border-amber-500/20">
+                    <h2 className="text-2xl font-black">Attempt Limit Reached</h2>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        You have used all available attempts for this assessment.
+                    </p>
+                </div>
+                <Link href={`/courses/${courseId}`} className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-all">
+                    <ArrowLeft className="h-4 w-4" /> Return to Course
+                </Link>
+            </div>
+        );
+    }
 
     const currentQuestion = test.questions[currentIndex];
     const progress = ((currentIndex + 1) / test.questions.length) * 100;
@@ -123,11 +173,18 @@ export default function TestPage({ params }: { params: Promise<{ courseId: strin
                 <Link href={`/courses/${courseId}`} className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-all">
                     <ArrowLeft className="h-4 w-4" /> Exit Without Saving
                 </Link>
-                {timeLeft !== null && (
-                    <Badge variant={timeLeft < 60 ? "destructive" : "outline"} className="px-4 py-1.5 rounded-full font-mono text-lg shadow-sm border-2">
-                        <Clock className="mr-2 h-4 w-4" /> {formatTime(timeLeft)}
-                    </Badge>
-                )}
+                <div className="flex items-center gap-3">
+                    {attemptsRemaining !== null && (
+                        <Badge variant="outline" className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                            Attempts: {attemptsRemaining}/{attemptLimit ?? "-"}
+                        </Badge>
+                    )}
+                    {timeLeft !== null && (
+                        <Badge variant={timeLeft < 60 ? "destructive" : "outline"} className="px-4 py-1.5 rounded-full font-mono text-lg shadow-sm border-2">
+                            <Clock className="mr-2 h-4 w-4" /> {formatTime(timeLeft)}
+                        </Badge>
+                    )}
+                </div>
             </div>
 
             <div className="space-y-2">

@@ -41,6 +41,7 @@ export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [deciding, setDeciding] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         fetchUsers();
@@ -77,6 +78,29 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleDecision = async (userId: string, decision: "accept" | "reject") => {
+        setDeciding((prev) => ({ ...prev, [userId]: true }));
+        try {
+            const res = await fetch(`/api/admin/candidates/${userId}/decision`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision }),
+            });
+
+            if (!res.ok) throw new Error("Decision failed");
+
+            if (decision === "accept") {
+                setUsers(users.map(u => u.id === userId ? { ...u, role: "learner" } : u));
+            }
+
+            toast.success(`Candidate ${decision}ed`);
+        } catch (_err) {
+            toast.error("Failed to update candidate");
+        } finally {
+            setDeciding((prev) => ({ ...prev, [userId]: false }));
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
     }
@@ -105,12 +129,32 @@ export default function AdminUsersPage() {
                                 <TableCell className="font-medium">{user.name || "N/A"}</TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'secondary'}>
-                                        {user.role}
+                                    <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
+                                        {user.role?.toUpperCase()}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{user.archetype}</TableCell>
                                 <TableCell className="text-right">
+                                    {user.role === "candidate" && (
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={deciding[user.id]}
+                                                onClick={() => handleDecision(user.id, "accept")}
+                                            >
+                                                Accept
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                disabled={deciding[user.id]}
+                                                onClick={() => handleDecision(user.id, "reject")}
+                                            >
+                                                Reject
+                                            </Button>
+                                        </div>
+                                    )}
                                     <Dialog open={editingUser?.id === user.id} onOpenChange={(open) => !open && setEditingUser(null)}>
                                         <DialogTrigger asChild>
                                             <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
@@ -132,10 +176,10 @@ export default function AdminUsersPage() {
                                                             <SelectValue placeholder="Select role" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="CANDIDATE">Candidate</SelectItem>
-                                                            <SelectItem value="LEARNER">Learner</SelectItem>
-                                                            <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
-                                                            <SelectItem value="ADMIN">Admin</SelectItem>
+                                                            <SelectItem value="candidate">Candidate</SelectItem>
+                                                            <SelectItem value="learner">Learner</SelectItem>
+                                                            <SelectItem value="supervisor">Supervisor</SelectItem>
+                                                            <SelectItem value="admin">Admin</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
