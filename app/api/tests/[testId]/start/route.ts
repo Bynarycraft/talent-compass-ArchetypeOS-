@@ -46,7 +46,7 @@ export async function POST(
       where: {
         testId,
         userId: session.user.id,
-        status: { not: "IN_PROGRESS" },
+        status: { notIn: ["in_progress", "IN_PROGRESS"] },
       },
     });
 
@@ -58,7 +58,7 @@ export async function POST(
       where: {
         testId,
         userId: session.user.id,
-        status: "IN_PROGRESS",
+        status: { in: ["in_progress", "IN_PROGRESS"] },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -78,7 +78,7 @@ export async function POST(
       data: {
         testId,
         userId: session.user.id,
-        status: "IN_PROGRESS",
+        status: "in_progress",
         answers: "{}",
         score: 0,
         attemptNumber,

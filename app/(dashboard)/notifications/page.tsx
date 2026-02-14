@@ -92,6 +92,11 @@ export default function NotificationsPage() {
       return;
     }
 
+    if (form.receiverId === "all" && learners.length === 0) {
+      toast.error("No learners available to notify");
+      return;
+    }
+
     setSending(true);
     try {
       const isBulk = form.receiverId === "all";
@@ -120,7 +125,8 @@ export default function NotificationsPage() {
           setItems(await refreshed.json());
         }
       } else {
-        toast.error("Failed to send notification");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to send notification");
       }
     } catch (_error) {
       toast.error("Failed to send notification");

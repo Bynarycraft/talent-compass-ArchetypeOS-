@@ -19,7 +19,7 @@ export async function GET() {
 
     const results = await prisma.testResult.findMany({
       where: {
-        status: "SUBMITTED",
+        status: { in: ["submitted", "SUBMITTED"] },
         ...whereClause,
       },
       include: {

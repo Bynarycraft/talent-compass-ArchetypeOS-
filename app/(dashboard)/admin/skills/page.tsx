@@ -30,9 +30,14 @@ export default function AdminSkillSearchPage() {
     try {
       const res = await fetch(`/api/admin/skills/search?skills=${encodeURIComponent(skills)}&mode=${mode}`);
       if (res.ok) {
-        setResults(await res.json());
+        const data = await res.json();
+        setResults(data);
+        if (Array.isArray(data) && data.length === 0) {
+          toast.message("No matching users found");
+        }
       } else {
-        toast.error("Search failed");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Search failed");
       }
     } catch (_error) {
       toast.error("Search failed");

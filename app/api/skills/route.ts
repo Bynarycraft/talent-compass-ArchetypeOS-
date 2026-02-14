@@ -19,7 +19,7 @@ export async function GET(_req: Request) {
                     include: { course: { include: { roadmap: true } } }
                 },
                 testResults: {
-                    where: { status: "GRADED" },
+                    where: { status: { in: ["graded", "GRADED"] } },
                     include: { test: { include: { course: { include: { roadmap: true } } } } }
                 }
             }

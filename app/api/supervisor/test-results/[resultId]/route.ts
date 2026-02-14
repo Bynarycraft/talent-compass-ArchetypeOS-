@@ -42,7 +42,7 @@ export async function PATCH(
       data: {
         score,
         feedback,
-        status: "GRADED",
+        status: "graded",
         gradedBy: session.user.id,
         gradedAt: new Date(),
       },

@@ -60,6 +60,16 @@ export default function AdminTestsPage() {
   }, []);
 
   const handleCreate = async () => {
+    if (!form.courseId) {
+      toast.error("Select a course before creating a test");
+      return;
+    }
+
+    if (!form.title.trim()) {
+      toast.error("Test title is required");
+      return;
+    }
+
     let parsedQuestions: unknown;
     try {
       parsedQuestions = JSON.parse(form.questions);
@@ -104,7 +114,8 @@ export default function AdminTestsPage() {
         });
         toast.success("Test created");
       } else {
-        toast.error("Failed to create test");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to create test");
       }
     } catch (_error) {
       toast.error("Failed to create test");

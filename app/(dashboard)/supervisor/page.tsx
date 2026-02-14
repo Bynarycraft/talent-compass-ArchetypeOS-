@@ -59,6 +59,7 @@ export default function SupervisorPage() {
     Array<{ id: string; name: string | null; email: string | null; role: string; lastSessionAt: string | null }>
   >([]);
   const [goalInputs, setGoalInputs] = useState<Record<string, string>>({});
+  const [reminding, setReminding] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -141,7 +142,8 @@ export default function SupervisorPage() {
           setLearners(await refreshed.json());
         }
       } else {
-        toast.error("Failed to assign course");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to assign course");
       }
     } catch (_error) {
       toast.error("Failed to assign course");
@@ -251,6 +253,32 @@ export default function SupervisorPage() {
       }
     } catch (_error) {
       toast.error("Failed to update goal");
+    }
+  };
+
+  const handleReminder = async (learnerId: string) => {
+    setReminding((prev) => ({ ...prev, [learnerId]: true }));
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiverId: learnerId,
+          title: "Learning Reminder",
+          message: "You have been inactive recently. Please log a learning session today.",
+          priority: "normal",
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Reminder sent");
+      } else {
+        toast.error("Failed to send reminder");
+      }
+    } catch (_error) {
+      toast.error("Failed to send reminder");
+    } finally {
+      setReminding((prev) => ({ ...prev, [learnerId]: false }));
     }
   };
 
@@ -520,7 +548,15 @@ export default function SupervisorPage() {
                     Last session: {learner.lastSessionAt ? new Date(learner.lastSessionAt).toLocaleDateString() : "Never"}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" className="rounded-2xl">Send Reminder</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-2xl"
+                  disabled={reminding[learner.id]}
+                  onClick={() => handleReminder(learner.id)}
+                >
+                  {reminding[learner.id] ? "Sending..." : "Send Reminder"}
+                </Button>
               </div>
             ))
           )}

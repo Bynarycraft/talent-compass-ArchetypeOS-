@@ -44,7 +44,7 @@ export async function POST(
         }
 
         let score = 0;
-        let status: "SUBMITTED" | "GRADED" = "SUBMITTED";
+        let status: "submitted" | "graded" = "submitted";
         interface Question {
             correct: number;
         }
@@ -61,7 +61,7 @@ export async function POST(
             where: {
                 testId,
                 userId: session.user.id,
-                status: "IN_PROGRESS",
+                status: { in: ["in_progress", "IN_PROGRESS"] },
             },
             orderBy: { createdAt: "desc" },
         });
@@ -69,7 +69,7 @@ export async function POST(
             where: {
                 testId,
                 userId: session.user.id,
-                status: { not: "IN_PROGRESS" },
+                status: { notIn: ["in_progress", "IN_PROGRESS"] },
             },
         });
 
@@ -88,7 +88,7 @@ export async function POST(
                 }
             });
             score = Math.round((correctCount / questions.length) * 100);
-            status = "GRADED";
+            status = "graded";
         }
 
         const passingScore = test.passingScore || 70;
@@ -98,7 +98,7 @@ export async function POST(
             ? await prisma.testResult.update({
                 where: { id: inProgressAttempt.id },
                 data: {
-                    answers,
+                    answers: JSON.stringify(answers || {}),
                     score,
                     status,
                     submittedAt: new Date(),
@@ -109,7 +109,7 @@ export async function POST(
                 data: {
                     testId,
                     userId: session.user.id,
-                    answers,
+                    answers: JSON.stringify(answers || {}),
                     score,
                     status,
                     attemptNumber,
@@ -120,14 +120,14 @@ export async function POST(
 
         if (session.user.role === "candidate") {
             const details = {
-                title: status === "GRADED" ? "Assessment Result" : "Assessment Submitted",
+                title: status === "graded" ? "Assessment Result" : "Assessment Submitted",
                 message:
-                    status === "GRADED"
+                    status === "graded"
                         ? score >= passingScore
                             ? `Passed with ${score}%`
                             : `Needs improvement: ${score}%`
                         : "Your assessment is pending review.",
-                priority: status === "GRADED" && score >= passingScore ? "low" : "normal",
+                priority: status === "graded" && score >= passingScore ? "low" : "normal",
                 createdBy: "system",
                 createdAt: new Date().toISOString(),
             };
